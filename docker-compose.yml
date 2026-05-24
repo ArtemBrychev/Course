@@ -20,12 +20,12 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_DB: ${TRACKER_DB_NAME}
-      POSTGRES_USER: ${TRACvKER_DB_USER}
+      POSTGRES_USER: ${TRACKER_DB_USER}
       POSTGRES_PASSWORD: ${TRACKER_DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${TRACKER_DB_USER} -d ${TRACKER_DB_NAME}" ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -75,7 +75,7 @@ services:
 #      - postgres_stat_data:/var/lib/postgresql/data
 
 volumes:
-  tasktrackerdb_data:
+  postgres_data:
   #postgres_stat_data:
-  ttrabbitmq-data:
+  rabbitmq-data:
   #rabbitmq-stat-data:
