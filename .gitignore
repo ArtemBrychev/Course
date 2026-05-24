@@ -1,0 +1,36 @@
+tracker/.env
+.env
+
+tracker/HELP.md
+tracker/target/
+tracker/.mvn/wrapper/maven-wrapper.jar
+!tracker/**/src/main/**/target/
+!tracker/**/src/test/**/target/
+
+### STS ###
+tracker/.apt_generated
+tracker/.classpath
+tracker/.factorypath
+tracker/.project
+tracker/.settings
+tracker/.springBeans
+tracker/.sts4-cache
+
+### IntelliJ IDEA ###
+tracker/.idea
+tracker/*.iws
+tracker/*.iml
+tracker/*.ipr
+
+### NetBeans ###
+tracker/nbproject/private/
+tracker/nbbuild/
+tracker/dist/
+tracker/nbdist/
+tracker/.nb-gradle/
+tracker/build/
+!tracker/**/src/main/**/build/
+!tracker/**/src/test/**/build/
+
+### VS Code ###
+tracker/.vscode/
