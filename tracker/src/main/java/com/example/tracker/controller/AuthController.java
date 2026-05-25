@@ -157,4 +157,24 @@ public class AuthController {
                     );
         }
     }
+
+    @GetMapping("/user/id/{id}")
+    public ResponseEntity<UserResponse> getById(
+            @PathVariable Long id
+    ) {
+
+        return ResponseEntity.ok(
+                userService.getResponseById(id)
+        );
+    }
+
+    @GetMapping("/find")
+    public ResponseEntity<UserResponse> getByEmail(
+            @RequestParam String email
+    ) {
+        System.out.println("Got an email: " + email);
+        return ResponseEntity.ok(
+                userService.getResponseByEmail(email)
+        );
+    }
 }

@@ -2,6 +2,7 @@ package com.example.tracker.service;
 
 import com.example.tracker.dto.ChangePasswordRequest;
 import com.example.tracker.dto.RegisterRequest;
+import com.example.tracker.dto.UserResponse;
 import com.example.tracker.model.User;
 import com.example.tracker.model.UserRole;
 import com.example.tracker.repository.UserRepository;
@@ -43,8 +44,10 @@ public class UserService {
     public User getByEmail(String email) {
 
         return userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found")
+                .orElseThrow(() -> {
+                    System.out.println("Не нашел пользователя");
+                            return new RuntimeException("User not found");
+                        }
                 );
     }
 
@@ -86,4 +89,28 @@ public class UserService {
 
         userRepository.save(user);
     }
+
+    public User getById(Long id) {
+
+        return userRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found")
+                );
+    }
+
+    public UserResponse getResponseById(Long id) {
+
+        User user = getById(id);
+
+        return UserResponse.from(user);
+    }
+
+    public UserResponse getResponseByEmail(String email) {
+
+        User user = getByEmail(email);
+
+        return UserResponse.from(user);
+    }
+
+
 }

@@ -1,0 +1,185 @@
+package com.example.tracker.service;
+
+import com.example.tracker.dto.ChangeTaskStatusRequest;
+import com.example.tracker.dto.CreateTaskRequest;
+import com.example.tracker.dto.TaskResponse;
+import com.example.tracker.dto.UpdateTaskRequest;
+import com.example.tracker.model.Board;
+import com.example.tracker.model.Task;
+import com.example.tracker.model.User;
+import com.example.tracker.repository.BoardRepository;
+import com.example.tracker.repository.TaskRepository;
+import com.example.tracker.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class TaskService {
+
+    private final TaskRepository taskRepository;
+
+    private final BoardRepository boardRepository;
+
+    private final UserRepository userRepository;
+
+    private final UserService userService;
+
+    public TaskResponse create(
+            String email,
+            CreateTaskRequest request
+    ) {
+
+        User user = userService.getByEmail(email);
+
+        Board board = boardRepository.findById(request.getBoardId())
+                .orElseThrow(() ->
+                        new RuntimeException("Board not found")
+                );
+
+        if (!board.getOwner().getId().equals(user.getId())) {
+            throw new RuntimeException("Access denied");
+        }
+
+        Task task = Task.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .board(board)
+                .build();
+
+        Task saved = taskRepository.save(task);
+
+        return TaskResponse.from(saved);
+    }
+
+    public TaskResponse getById(
+            Long id,
+            String email
+    ) {
+
+        User user = userService.getByEmail(email);
+
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Task not found")
+                );
+
+        if (!task.getBoard().getOwner().getId().equals(user.getId())) {
+            throw new RuntimeException("Access denied");
+        }
+
+        return TaskResponse.from(task);
+    }
+
+    public List<TaskResponse> getAllByBoard(
+            Long boardId,
+            String email
+    ) {
+
+        User user = userService.getByEmail(email);
+
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(() ->
+                        new RuntimeException("Board not found")
+                );
+
+        if (!board.getOwner().getId().equals(user.getId())) {
+            throw new RuntimeException("Access denied");
+        }
+
+        return taskRepository.findAllByBoardId(boardId)
+                .stream()
+                .map(TaskResponse::from)
+                .toList();
+    }
+
+    public TaskResponse update(
+            Long id,
+            String email,
+            UpdateTaskRequest request
+    ) {
+
+        User user = userService.getByEmail(email);
+
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Task not found")
+                );
+
+        if (!task.getBoard().getOwner().getId().equals(user.getId())) {
+            throw new RuntimeException("Access denied");
+        }
+
+        if (request.getTitle() != null) {
+            task.setTitle(request.getTitle());
+        }
+
+        if (request.getDescription() != null) {
+            task.setDescription(request.getDescription());
+        }
+
+        if (request.getStatus() != null) {
+            task.setStatus(request.getStatus());
+        }
+
+        if (request.getAssigneeId() != null) {
+
+            User assignee = userRepository.findById(
+                    request.getAssigneeId()
+            ).orElseThrow(() ->
+                    new RuntimeException("User not found")
+            );
+
+            task.setAssignee(assignee);
+        }
+
+        Task updated = taskRepository.save(task);
+
+        return TaskResponse.from(updated);
+    }
+
+    public TaskResponse changeStatus(
+            Long id,
+            String email,
+            ChangeTaskStatusRequest request
+    ) {
+
+        User user = userService.getByEmail(email);
+
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Task not found")
+                );
+
+        if (!task.getBoard().getOwner().getId().equals(user.getId())) {
+            throw new RuntimeException("Access denied");
+        }
+
+        task.setStatus(request.getStatus());
+
+        Task updated = taskRepository.save(task);
+
+        return TaskResponse.from(updated);
+    }
+
+    public void delete(
+            Long id,
+            String email
+    ) {
+
+        User user = userService.getByEmail(email);
+
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Task not found")
+                );
+
+        if (!task.getBoard().getOwner().getId().equals(user.getId())) {
+            throw new RuntimeException("Access denied");
+        }
+
+        taskRepository.delete(task);
+    }
+}

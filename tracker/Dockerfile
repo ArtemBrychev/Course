@@ -1,4 +1,7 @@
-FROM tomcat:9.0-jdk21-temurin
+FROM eclipse-temurin:21-jdk
 
-COPY target/tracker-0.0.1-SNAPSHOT.jar \
-     /usr/local/tomcat/webapps/ROOT.jar
+WORKDIR /app
+
+COPY target/tracker-0.0.1-SNAPSHOT.jar app.jar
+
+ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -1,0 +1,105 @@
+package com.example.tracker.service;
+
+import com.example.tracker.dto.CommentResponse;
+import com.example.tracker.dto.CreateCommentRequest;
+import com.example.tracker.model.Comment;
+import com.example.tracker.model.Task;
+import com.example.tracker.model.User;
+import com.example.tracker.repository.CommentRepository;
+import com.example.tracker.repository.TaskRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class CommentService {
+
+    private final CommentRepository commentRepository;
+
+    private final TaskRepository taskRepository;
+
+    private final UserService userService;
+
+    public CommentResponse create(
+            Long taskId,
+            String email,
+            CreateCommentRequest request
+    ) {
+
+        User user = userService.getByEmail(email);
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() ->
+                        new RuntimeException("Task not found")
+                );
+
+        if (!task.getBoard().getOwner().getId().equals(user.getId())) {
+            throw new RuntimeException("Access denied");
+        }
+
+        Comment comment = Comment.builder()
+                .text(request.getText())
+                .task(task)
+                .author(user)
+                .build();
+
+        Comment saved = commentRepository.save(comment);
+
+        return CommentResponse.from(saved);
+    }
+
+    public List<CommentResponse> getAllByTask(
+            Long taskId,
+            String email
+    ) {
+
+        User user = userService.getByEmail(email);
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() ->
+                        new RuntimeException("Task not found")
+                );
+
+        if (!task.getBoard().getOwner().getId().equals(user.getId())) {
+            throw new RuntimeException("Access denied");
+        }
+
+        return commentRepository.findAllByTaskId(taskId)
+                .stream()
+                .map(CommentResponse::from)
+                .toList();
+    }
+
+    public void delete(
+            Long id,
+            String email
+    ) {
+
+        User user = userService.getByEmail(email);
+
+        Comment comment = commentRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Comment not found")
+                );
+
+        boolean isBoardOwner =
+                comment.getTask()
+                        .getBoard()
+                        .getOwner()
+                        .getId()
+                        .equals(user.getId());
+
+        boolean isAuthor =
+                comment.getAuthor()
+                        .getId()
+                        .equals(user.getId());
+
+        if (!isBoardOwner && !isAuthor) {
+            throw new RuntimeException("Access denied");
+        }
+
+        commentRepository.delete(comment);
+    }
+}
