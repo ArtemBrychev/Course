@@ -7,6 +7,8 @@ import com.example.tracker.model.User;
 import com.example.tracker.model.UserRole;
 import com.example.tracker.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +20,8 @@ public class UserService {
 
     private final PasswordEncoder passwordEncoder;
 
+    //TODO: Возможно все таки сделать кеширование через репозитории а не вот это вот говно со слоями
+    @CacheEvict(value = {"usersByEmail", "usersById"}, allEntries = true)
     public User register(RegisterRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -41,6 +45,7 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    @Cacheable(value = "usersByEmail", key = "#email")
     public User getByEmail(String email) {
 
         return userRepository.findByEmail(email)
@@ -51,6 +56,7 @@ public class UserService {
                 );
     }
 
+    @CacheEvict(value = {"usersByEmail", "usersById"}, allEntries = true)
     public void deleteUser(String email) {
 
         User user = getByEmail(email);
@@ -58,6 +64,7 @@ public class UserService {
         userRepository.delete(user);
     }
 
+    @CacheEvict(value = {"usersByEmail", "usersById"}, allEntries = true)
     public void changePassword(
             String email,
             ChangePasswordRequest request
@@ -90,6 +97,7 @@ public class UserService {
         userRepository.save(user);
     }
 
+    @Cacheable(value = "usersById", key = "#id")
     public User getById(Long id) {
 
         return userRepository.findById(id)
@@ -105,9 +113,15 @@ public class UserService {
         return UserResponse.from(user);
     }
 
+    @Cacheable(value = "usersByEmail", key = "#email")
     public UserResponse getResponseByEmail(String email) {
 
-        User user = getByEmail(email);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> {
+                            System.out.println("Не нашел пользователя");
+                            return new RuntimeException("User not found");
+                        }
+                );;
 
         return UserResponse.from(user);
     }

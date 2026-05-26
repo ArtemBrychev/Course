@@ -2,13 +2,16 @@ package com.example.tracker.dto;
 
 import com.example.tracker.model.User;
 import com.example.tracker.model.UserRole;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 public class UserResponse {
 
     private Long id;
