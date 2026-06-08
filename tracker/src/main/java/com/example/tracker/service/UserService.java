@@ -6,6 +6,7 @@ import com.example.tracker.dto.UserResponse;
 import com.example.tracker.model.User;
 import com.example.tracker.model.UserRole;
 import com.example.tracker.repository.UserRepository;
+import com.example.tracker.repository.cache.UserCacheRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -20,8 +21,8 @@ public class UserService {
 
     private final PasswordEncoder passwordEncoder;
 
-    //TODO: Возможно все таки сделать кеширование через репозитории а не вот это вот говно со слоями
-    @CacheEvict(value = {"usersByEmail", "usersById"}, allEntries = true)
+    private final UserCacheRepository userCacheRepository;
+
     public User register(RegisterRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -45,7 +46,6 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    @Cacheable(value = "usersByEmail", key = "#email")
     public User getByEmail(String email) {
 
         return userRepository.findByEmail(email)
@@ -56,15 +56,17 @@ public class UserService {
                 );
     }
 
-    @CacheEvict(value = {"usersByEmail", "usersById"}, allEntries = true)
     public void deleteUser(String email) {
 
         User user = getByEmail(email);
 
+        userCacheRepository.delete(
+                UserResponse.from(user)
+        );
+
         userRepository.delete(user);
     }
 
-    @CacheEvict(value = {"usersByEmail", "usersById"}, allEntries = true)
     public void changePassword(
             String email,
             ChangePasswordRequest request
@@ -95,9 +97,12 @@ public class UserService {
         );
 
         userRepository.save(user);
+
+        userCacheRepository.delete(
+                UserResponse.from(user)
+        );
     }
 
-    @Cacheable(value = "usersById", key = "#id")
     public User getById(Long id) {
 
         return userRepository.findById(id)
@@ -108,23 +113,64 @@ public class UserService {
 
     public UserResponse getResponseById(Long id) {
 
+        UserResponse cached =
+                userCacheRepository.findById(id);
+
+        if (cached != null) {
+
+            System.out.println(
+                    "CACHE HIT user:id:" + id
+            );
+
+            return cached;
+        }
+
+        System.out.println(
+                "CACHE MISS user:id:" + id
+        );
+
         User user = getById(id);
 
-        return UserResponse.from(user);
+        UserResponse response =
+                UserResponse.from(user);
+
+        userCacheRepository.save(response);
+
+        return response;
     }
 
-    @Cacheable(value = "usersByEmail", key = "#email")
-    public UserResponse getResponseByEmail(String email) {
+    public UserResponse getResponseByEmail(
+            String email
+    ) {
+
+        UserResponse cached =
+                userCacheRepository.findByEmail(email);
+
+        if (cached != null) {
+
+            System.out.println(
+                    "CACHE HIT user:email:" + email
+            );
+
+            return cached;
+        }
+
+        System.out.println(
+                "CACHE MISS user:email:" + email
+        );
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> {
-                            System.out.println("Не нашел пользователя");
-                            return new RuntimeException("User not found");
-                        }
-                );;
+                .orElseThrow(
+                        () -> new RuntimeException(
+                                "User not found"
+                        )
+                );
 
-        return UserResponse.from(user);
+        UserResponse response =
+                UserResponse.from(user);
+
+        userCacheRepository.save(response);
+
+        return response;
     }
-
-
 }

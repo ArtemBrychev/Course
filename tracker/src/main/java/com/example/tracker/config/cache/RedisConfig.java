@@ -1,5 +1,6 @@
 package com.example.tracker.config.cache;
 
+import com.example.tracker.dto.UserResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -8,27 +9,51 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
 public class RedisConfig {
 
     @Bean
-    public GenericJackson2JsonRedisSerializer redisSerializer() {
+    public RedisTemplate<String, UserResponse> userRedisTemplate(
+            RedisConnectionFactory connectionFactory
+    ) {
 
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper objectMapper =
+                new ObjectMapper();
 
-        mapper.registerModule(new JavaTimeModule());
+        objectMapper.registerModule(
+                new JavaTimeModule()
+        );
 
-        mapper.disable(
+        objectMapper.disable(
                 SerializationFeature.WRITE_DATES_AS_TIMESTAMPS
         );
 
-        mapper.activateDefaultTyping(
-                mapper.getPolymorphicTypeValidator(),
-                ObjectMapper.DefaultTyping.NON_FINAL
+        Jackson2JsonRedisSerializer<UserResponse> serializer =
+                new Jackson2JsonRedisSerializer<>(
+                        objectMapper,
+                        UserResponse.class
+                );
+
+        RedisTemplate<String, UserResponse> template =
+                new RedisTemplate<>();
+
+        template.setConnectionFactory(
+                connectionFactory
         );
 
-        return new GenericJackson2JsonRedisSerializer(mapper);
+        template.setKeySerializer(
+                new StringRedisSerializer()
+        );
+
+        template.setValueSerializer(
+                serializer
+        );
+
+        template.afterPropertiesSet();
+
+        return template;
     }
 }
