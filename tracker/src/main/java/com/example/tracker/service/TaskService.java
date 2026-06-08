@@ -10,6 +10,7 @@ import com.example.tracker.model.User;
 import com.example.tracker.repository.BoardRepository;
 import com.example.tracker.repository.TaskRepository;
 import com.example.tracker.repository.UserRepository;
+import com.example.tracker.repository.cache.TaskCacheRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +27,8 @@ public class TaskService {
     private final UserRepository userRepository;
 
     private final UserService userService;
+
+    private final TaskCacheRepository taskCacheRepository;
 
     public TaskResponse create(
             String email,
@@ -61,16 +64,49 @@ public class TaskService {
 
         User user = userService.getByEmail(email);
 
+        TaskResponse cached =
+                taskCacheRepository.findById(id);
+
+        if (cached != null) {
+
+            Board board = boardRepository.findById(
+                    cached.getBoardId()
+            ).orElseThrow(
+                    () -> new RuntimeException("Board not found")
+            );
+
+            if (!board.getOwner().getId().equals(user.getId())) {
+                throw new RuntimeException("Access denied");
+            }
+
+            System.out.println(
+                    "[REDIS] CACHE HIT task:id:" + id
+            );
+
+            return cached;
+        }
+
+        System.out.println(
+                "[REDIS] CACHE MISS task:id:" + id
+        );
+
         Task task = taskRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Task not found")
+                        new RuntimeException(
+                                "Task not found"
+                        )
                 );
 
         if (!task.getBoard().getOwner().getId().equals(user.getId())) {
             throw new RuntimeException("Access denied");
         }
 
-        return TaskResponse.from(task);
+        TaskResponse response =
+                TaskResponse.from(task);
+
+        taskCacheRepository.save(response);
+
+        return response;
     }
 
     public List<TaskResponse> getAllByBoard(
@@ -136,6 +172,7 @@ public class TaskService {
         }
 
         Task updated = taskRepository.save(task);
+        taskCacheRepository.delete(id);
 
         return TaskResponse.from(updated);
     }
@@ -161,7 +198,12 @@ public class TaskService {
 
         Task updated = taskRepository.save(task);
 
-        return TaskResponse.from(updated);
+        TaskResponse response =
+                TaskResponse.from(updated);
+
+        taskCacheRepository.save(response);
+
+        return response;
     }
 
     public void delete(
@@ -179,6 +221,8 @@ public class TaskService {
         if (!task.getBoard().getOwner().getId().equals(user.getId())) {
             throw new RuntimeException("Access denied");
         }
+
+        taskCacheRepository.delete(id);
 
         taskRepository.delete(task);
     }

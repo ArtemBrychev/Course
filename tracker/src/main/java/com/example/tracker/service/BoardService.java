@@ -5,6 +5,7 @@ import com.example.tracker.dto.CreateBoardRequest;
 import com.example.tracker.model.Board;
 import com.example.tracker.model.User;
 import com.example.tracker.repository.BoardRepository;
+import com.example.tracker.repository.cache.BoardCacheRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +16,7 @@ import java.util.List;
 public class BoardService {
 
     private final BoardRepository boardRepository;
+    private final BoardCacheRepository boardCacheRepository;
     private final UserService userService;
 
     public BoardResponse create(String email, CreateBoardRequest request) {
@@ -45,14 +47,43 @@ public class BoardService {
 
         User user = userService.getByEmail(email);
 
+        BoardResponse cached =
+                boardCacheRepository.findById(id);
+
+        if (cached != null) {
+
+            if (!cached.getOwnerId().equals(user.getId())) {
+                throw new RuntimeException("Access denied");
+            }
+
+            System.out.println(
+                    "[REDIS] CACHE HIT board:id:" + id
+            );
+
+            return cached;
+        }
+
+        System.out.println(
+                "[REDIS] CACHE MISS board:id:" + id
+        );
+
         Board board = boardRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Board not found"));
+                .orElseThrow(
+                        () -> new RuntimeException(
+                                "Board not found"
+                        )
+                );
 
         if (!board.getOwner().getId().equals(user.getId())) {
             throw new RuntimeException("Access denied");
         }
 
-        return BoardResponse.from(board);
+        BoardResponse response =
+                BoardResponse.from(board);
+
+        boardCacheRepository.save(response);
+
+        return response;
     }
 
     public void delete(Long id, String email) {
@@ -65,6 +96,8 @@ public class BoardService {
         if (!board.getOwner().getId().equals(user.getId())) {
             throw new RuntimeException("Access denied");
         }
+
+        boardCacheRepository.delete(id);
 
         boardRepository.delete(board);
     }
