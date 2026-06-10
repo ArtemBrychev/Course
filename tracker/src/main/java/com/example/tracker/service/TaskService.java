@@ -4,6 +4,8 @@ import com.example.tracker.dto.ChangeTaskStatusRequest;
 import com.example.tracker.dto.CreateTaskRequest;
 import com.example.tracker.dto.TaskResponse;
 import com.example.tracker.dto.UpdateTaskRequest;
+import com.example.tracker.exceptions.AccessDeniedException;
+import com.example.tracker.exceptions.DataNotFoundException;
 import com.example.tracker.model.Board;
 import com.example.tracker.model.Task;
 import com.example.tracker.model.User;
@@ -12,10 +14,12 @@ import com.example.tracker.repository.TaskRepository;
 import com.example.tracker.repository.UserRepository;
 import com.example.tracker.repository.cache.TaskCacheRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TaskService {
@@ -30,20 +34,18 @@ public class TaskService {
 
     private final TaskCacheRepository taskCacheRepository;
 
-    public TaskResponse create(
-            String email,
-            CreateTaskRequest request
-    ) {
+    private final BoardService boardService;
 
+    public TaskResponse create(String email, CreateTaskRequest request) {
         User user = userService.getByEmail(email);
 
         Board board = boardRepository.findById(request.getBoardId())
                 .orElseThrow(() ->
-                        new RuntimeException("Board not found")
+                        new DataNotFoundException("Board not found")
                 );
 
-        if (!board.getOwner().getId().equals(user.getId())) {
-            throw new RuntimeException("Access denied");
+        if (!boardService.hasAccess(board, user)) {
+            throw new AccessDeniedException("Access denied");
         }
 
         Task task = Task.builder()
@@ -57,72 +59,51 @@ public class TaskService {
         return TaskResponse.from(saved);
     }
 
-    public TaskResponse getById(
-            Long id,
-            String email
-    ) {
-
+    public TaskResponse getById(Long id, String email) {
         User user = userService.getByEmail(email);
-
-        TaskResponse cached =
-                taskCacheRepository.findById(id);
-
+        TaskResponse cached = taskCacheRepository.findById(id);
         if (cached != null) {
-
             Board board = boardRepository.findById(
                     cached.getBoardId()
             ).orElseThrow(
-                    () -> new RuntimeException("Board not found")
+                    () -> new DataNotFoundException("Board not found")
             );
 
-            if (!board.getOwner().getId().equals(user.getId())) {
-                throw new RuntimeException("Access denied");
+            if (!boardService.hasAccess(board, user)) {
+                throw new AccessDeniedException("Access denied");
             }
 
-            System.out.println(
-                    "[REDIS] CACHE HIT task:id:" + id
-            );
+            log.info("[REDIS] CACHE HIT task:id:" + id);
 
             return cached;
         }
 
-        System.out.println(
-                "[REDIS] CACHE MISS task:id:" + id
-        );
+        log.info("[REDIS] CACHE MISS task:id:" + id);
 
         Task task = taskRepository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Task not found"
-                        )
+                .orElseThrow(
+                        () -> new DataNotFoundException("Task not found")
                 );
 
-        if (!task.getBoard().getOwner().getId().equals(user.getId())) {
-            throw new RuntimeException("Access denied");
+        if (!boardService.hasAccess(task.getBoard(), user)) {
+            throw new AccessDeniedException("Access denied");
         }
 
-        TaskResponse response =
-                TaskResponse.from(task);
-
+        TaskResponse response = TaskResponse.from(task);
         taskCacheRepository.save(response);
-
         return response;
     }
 
-    public List<TaskResponse> getAllByBoard(
-            Long boardId,
-            String email
-    ) {
-
+    public List<TaskResponse> getAllByBoard(Long boardId, String email) {
         User user = userService.getByEmail(email);
 
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() ->
-                        new RuntimeException("Board not found")
+                        new DataNotFoundException("Board not found")
                 );
 
-        if (!board.getOwner().getId().equals(user.getId())) {
-            throw new RuntimeException("Access denied");
+        if (!boardService.hasAccess(board, user)) {
+            throw new AccessDeniedException("Access denied");
         }
 
         return taskRepository.findAllByBoardId(boardId)
@@ -131,21 +112,16 @@ public class TaskService {
                 .toList();
     }
 
-    public TaskResponse update(
-            Long id,
-            String email,
-            UpdateTaskRequest request
-    ) {
-
+    public TaskResponse update(Long id, String email, UpdateTaskRequest request) {
         User user = userService.getByEmail(email);
 
         Task task = taskRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Task not found")
+                        new DataNotFoundException("Task not found")
                 );
 
-        if (!task.getBoard().getOwner().getId().equals(user.getId())) {
-            throw new RuntimeException("Access denied");
+        if (!boardService.hasAccess(task.getBoard(), user)) {
+            throw new AccessDeniedException("Access denied");
         }
 
         if (request.getTitle() != null) {
@@ -165,7 +141,7 @@ public class TaskService {
             User assignee = userRepository.findById(
                     request.getAssigneeId()
             ).orElseThrow(() ->
-                    new RuntimeException("User not found")
+                    new DataNotFoundException("User not found")
             );
 
             task.setAssignee(assignee);
@@ -187,39 +163,34 @@ public class TaskService {
 
         Task task = taskRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Task not found")
+                        new DataNotFoundException("Task not found")
                 );
 
-        if (!task.getBoard().getOwner().getId().equals(user.getId())) {
-            throw new RuntimeException("Access denied");
+        if (!boardService.hasAccess(task.getBoard(), user)) {
+            throw new AccessDeniedException("Access denied");
         }
 
         task.setStatus(request.getStatus());
 
         Task updated = taskRepository.save(task);
 
-        TaskResponse response =
-                TaskResponse.from(updated);
+        TaskResponse response = TaskResponse.from(updated);
 
         taskCacheRepository.save(response);
 
         return response;
     }
 
-    public void delete(
-            Long id,
-            String email
-    ) {
-
+    public void delete(Long id, String email) {
         User user = userService.getByEmail(email);
 
         Task task = taskRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Task not found")
+                        new DataNotFoundException("Task not found")
                 );
 
-        if (!task.getBoard().getOwner().getId().equals(user.getId())) {
-            throw new RuntimeException("Access denied");
+        if (!boardService.isOwner(task.getBoard(), user)) {
+            throw new AccessDeniedException("Access denied");
         }
 
         taskCacheRepository.delete(id);

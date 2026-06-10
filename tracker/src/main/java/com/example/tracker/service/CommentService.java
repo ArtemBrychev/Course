@@ -2,6 +2,8 @@ package com.example.tracker.service;
 
 import com.example.tracker.dto.CommentResponse;
 import com.example.tracker.dto.CreateCommentRequest;
+import com.example.tracker.exceptions.AccessDeniedException;
+import com.example.tracker.exceptions.DataNotFoundException;
 import com.example.tracker.model.Comment;
 import com.example.tracker.model.Task;
 import com.example.tracker.model.User;
@@ -22,6 +24,8 @@ public class CommentService {
 
     private final UserService userService;
 
+    private final BoardService boardService;
+
     public CommentResponse create(
             Long taskId,
             String email,
@@ -32,11 +36,11 @@ public class CommentService {
 
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() ->
-                        new RuntimeException("Task not found")
+                        new DataNotFoundException("Task not found")
                 );
 
-        if (!task.getBoard().getOwner().getId().equals(user.getId())) {
-            throw new RuntimeException("Access denied");
+        if (!boardService.hasAccess(task.getBoard(), user)) {
+            throw new AccessDeniedException("Access denied");
         }
 
         Comment comment = Comment.builder()
@@ -59,11 +63,11 @@ public class CommentService {
 
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() ->
-                        new RuntimeException("Task not found")
+                        new DataNotFoundException("Task not found")
                 );
 
-        if (!task.getBoard().getOwner().getId().equals(user.getId())) {
-            throw new RuntimeException("Access denied");
+        if (!boardService.hasAccess(task.getBoard(), user)) {
+            throw new AccessDeniedException("Access denied");
         }
 
         return commentRepository.findAllByTaskId(taskId)
@@ -72,32 +76,26 @@ public class CommentService {
                 .toList();
     }
 
-    public void delete(
-            Long id,
-            String email
-    ) {
-
+    public void delete(Long id, String email) {
         User user = userService.getByEmail(email);
 
         Comment comment = commentRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Comment not found")
+                        new DataNotFoundException("Comment not found")
                 );
 
-        boolean isBoardOwner =
-                comment.getTask()
+        boolean isBoardOwner = comment.getTask()
                         .getBoard()
                         .getOwner()
                         .getId()
                         .equals(user.getId());
 
-        boolean isAuthor =
-                comment.getAuthor()
+        boolean isAuthor = comment.getAuthor()
                         .getId()
                         .equals(user.getId());
 
         if (!isBoardOwner && !isAuthor) {
-            throw new RuntimeException("Access denied");
+            throw new AccessDeniedException("Access denied");
         }
 
         commentRepository.delete(comment);

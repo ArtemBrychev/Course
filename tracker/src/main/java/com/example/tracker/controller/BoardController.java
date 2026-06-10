@@ -1,5 +1,6 @@
 package com.example.tracker.controller;
 
+import com.example.tracker.dto.AddBoardMemberRequest;
 import com.example.tracker.dto.BoardResponse;
 import com.example.tracker.dto.CreateBoardRequest;
 import com.example.tracker.service.BoardService;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/boards")
@@ -27,12 +29,21 @@ public class BoardController {
         );
     }
 
-    @GetMapping("all")
-    public ResponseEntity<List<BoardResponse>> getAll(
+    @GetMapping("allOwner")
+    public ResponseEntity<List<BoardResponse>> getAllOwner(
             Principal principal
     ) {
         return ResponseEntity.ok(
-                boardService.getAll(principal.getName())
+                boardService.getAllByOwner(principal.getName())
+        );
+    }
+
+    @GetMapping("allUser")
+    public ResponseEntity<List<BoardResponse>> getAllUser(
+            Principal principal
+    ) {
+        return ResponseEntity.ok(
+                boardService.getAllByUser(principal.getName())
         );
     }
 
@@ -55,6 +66,42 @@ public class BoardController {
 
         return ResponseEntity.ok(
                 java.util.Map.of("message", "Board deleted")
+        );
+    }
+
+    @PostMapping("/{boardId}/members")
+    public ResponseEntity<?> addMember(
+            @PathVariable Long boardId,
+            @RequestBody AddBoardMemberRequest request,
+            Principal principal
+    ) {
+        boardService.addMember(boardId, principal.getName(), request.getEmail());
+        return ResponseEntity.ok(
+                Map.of(
+                        "message",
+                        "User added to board"
+                )
+        );
+    }
+
+    @DeleteMapping("/{boardId}/members")
+    public ResponseEntity<?> removeMember(
+            @PathVariable Long boardId,
+            @RequestBody AddBoardMemberRequest request,
+            Principal principal
+    ) {
+
+        boardService.removeMember(
+                boardId,
+                principal.getName(),
+                request.getEmail()
+        );
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "message",
+                        "User removed from board"
+                )
         );
     }
 }
