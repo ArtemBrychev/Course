@@ -145,6 +145,7 @@ public class BoardService {
         boardMemberRepository.save(boardMember);
     }
 
+    @Transactional
     public void removeMember(Long boardId, String ownerEmail, String memberEmail) {
         User owner = userService.getByEmail(ownerEmail);
         Board board = boardRepository.findById(boardId)
