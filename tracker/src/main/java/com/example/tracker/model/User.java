@@ -33,7 +33,11 @@ public class User {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "owner")
+    @OneToMany(
+            mappedBy = "owner",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
     @Builder.Default
     private List<Board> boards = new ArrayList<>();
 
@@ -41,9 +45,21 @@ public class User {
     @Builder.Default
     private List<Task> assignedTasks = new ArrayList<>();
 
-    @OneToMany(mappedBy = "author")
+    @OneToMany(
+            mappedBy = "author",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
     @Builder.Default
     private List<Comment> comments = new ArrayList<>();
+
+    @OneToMany(
+            mappedBy = "user",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @Builder.Default
+    private List<BoardMember> memberships = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {

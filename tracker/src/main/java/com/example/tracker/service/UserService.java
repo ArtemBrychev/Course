@@ -9,6 +9,7 @@ import com.example.tracker.exceptions.DataNotFoundException;
 import com.example.tracker.exceptions.InvalidDataException;
 import com.example.tracker.model.User;
 import com.example.tracker.model.UserRole;
+import com.example.tracker.repository.TaskRepository;
 import com.example.tracker.repository.UserRepository;
 import com.example.tracker.repository.cache.UserCacheRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,8 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     private final UserCacheRepository userCacheRepository;
+
+    private final TaskRepository taskRepository;
 
     public User register(RegisterRequest request) {
 
@@ -64,6 +67,12 @@ public class UserService {
 
     public void deleteUser(String email) {
         User user = getByEmail(email);
+
+        taskRepository.findAllByAssigneeId(user.getId()).forEach(task -> {
+            task.setAssignee(null);
+            taskRepository.save(task);
+        });
+
         userCacheRepository.delete(UserResponse.from(user));
         userRepository.delete(user);
     }

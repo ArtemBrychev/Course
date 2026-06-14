@@ -11,6 +11,7 @@ import com.example.tracker.model.User;
 import com.example.tracker.repository.BoardMemberRepository;
 import com.example.tracker.repository.BoardRepository;
 import com.example.tracker.repository.cache.BoardCacheRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -118,6 +119,7 @@ public class BoardService {
         boardRepository.delete(board);
     }
 
+    @Transactional
     public void addMember(Long boardId, String ownerEmail, String memberEmail) {
         User owner = userService.getByEmail(ownerEmail);
 

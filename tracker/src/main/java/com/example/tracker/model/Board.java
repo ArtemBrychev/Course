@@ -34,6 +34,14 @@ public class Board {
     @Builder.Default
     private List<Task> tasks = new ArrayList<>();
 
+    @OneToMany(
+            mappedBy = "board",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @Builder.Default
+    private List<BoardMember> members = new ArrayList<>();
+
     @PrePersist
     public void prePersist() {
         createdAt = LocalDateTime.now();
