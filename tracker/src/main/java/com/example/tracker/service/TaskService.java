@@ -4,6 +4,12 @@ import com.example.tracker.dto.ChangeTaskStatusRequest;
 import com.example.tracker.dto.CreateTaskRequest;
 import com.example.tracker.dto.TaskResponse;
 import com.example.tracker.dto.UpdateTaskRequest;
+import com.example.tracker.eventdriven.EventSender;
+import com.example.tracker.eventdriven.EventType;
+import com.example.tracker.eventdriven.events.TaskCreatedPayload;
+import com.example.tracker.eventdriven.events.TaskDeletedPayload;
+import com.example.tracker.eventdriven.events.TaskStatusChangedPayload;
+import com.example.tracker.eventdriven.events.TaskUpdatedPayload;
 import com.example.tracker.exceptions.AccessDeniedException;
 import com.example.tracker.exceptions.DataNotFoundException;
 import com.example.tracker.model.Board;
@@ -36,6 +42,8 @@ public class TaskService {
 
     private final BoardService boardService;
 
+    private final EventSender eventSender;
+
     public TaskResponse create(String email, CreateTaskRequest request) {
         User user = userService.getByEmail(email);
 
@@ -55,6 +63,20 @@ public class TaskService {
                 .build();
 
         Task saved = taskRepository.save(task);
+
+        long assigneeId = (saved.getAssignee()!=null)? saved.getAssignee().getId() : -1;
+        TaskCreatedPayload payload = new TaskCreatedPayload(
+                saved.getId(),
+                saved.getBoard().getId(),
+                saved.getTitle(),
+                saved.getDescription(),
+                saved.getStatus().toString(),
+                assigneeId,
+                user.getId()
+        );
+        eventSender.eventType(EventType.TASK_CREATED)
+                .payload(payload)
+                .send();
 
         return TaskResponse.from(saved);
     }
@@ -150,6 +172,16 @@ public class TaskService {
         Task updated = taskRepository.save(task);
         taskCacheRepository.delete(id);
 
+        TaskUpdatedPayload payload = new TaskUpdatedPayload(
+                updated.getId(),
+                updated.getTitle(),
+                updated.getDescription(),
+                user.getId()
+        );
+        eventSender.eventType(EventType.TASK_UPDATED)
+                .payload(payload)
+                .send();
+
         return TaskResponse.from(updated);
     }
 
@@ -170,6 +202,7 @@ public class TaskService {
             throw new AccessDeniedException("Access denied");
         }
 
+        String oldStatus = task.getStatus().toString();
         task.setStatus(request.getStatus());
 
         Task updated = taskRepository.save(task);
@@ -177,6 +210,16 @@ public class TaskService {
         TaskResponse response = TaskResponse.from(updated);
 
         taskCacheRepository.save(response);
+
+        TaskStatusChangedPayload payload = new TaskStatusChangedPayload(
+                updated.getId(),
+                oldStatus,
+                updated.getStatus().toString(),
+                user.getId()
+        );
+        eventSender.eventType(EventType.TASK_STATUS_CHANGED)
+                .payload(payload)
+                .send();
 
         return response;
     }
@@ -194,7 +237,15 @@ public class TaskService {
         }
 
         taskCacheRepository.delete(id);
-
         taskRepository.delete(task);
+
+        TaskDeletedPayload payload = new TaskDeletedPayload(
+                task.getId(),
+                user.getId()
+        );
+
+        eventSender.eventType(EventType.TASK_DELETED)
+                .payload(payload)
+                .send();
     }
 }

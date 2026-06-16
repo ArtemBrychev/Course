@@ -2,6 +2,10 @@ package com.example.tracker.service;
 
 import com.example.tracker.dto.CommentResponse;
 import com.example.tracker.dto.CreateCommentRequest;
+import com.example.tracker.eventdriven.EventSender;
+import com.example.tracker.eventdriven.EventType;
+import com.example.tracker.eventdriven.events.CommentCreatedPayload;
+import com.example.tracker.eventdriven.events.CommentDeletedPayload;
 import com.example.tracker.exceptions.AccessDeniedException;
 import com.example.tracker.exceptions.DataNotFoundException;
 import com.example.tracker.model.Comment;
@@ -9,6 +13,7 @@ import com.example.tracker.model.Task;
 import com.example.tracker.model.User;
 import com.example.tracker.repository.CommentRepository;
 import com.example.tracker.repository.TaskRepository;
+import jakarta.validation.Payload;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +30,8 @@ public class CommentService {
     private final UserService userService;
 
     private final BoardService boardService;
+
+    private final EventSender eventSender;
 
     public CommentResponse create(
             Long taskId,
@@ -50,6 +57,16 @@ public class CommentService {
                 .build();
 
         Comment saved = commentRepository.save(comment);
+
+        CommentCreatedPayload payload = new CommentCreatedPayload(
+                saved.getId(),
+                saved.getTask().getId(),
+                saved.getAuthor().getId(),
+                saved.getText()
+        );
+        eventSender.eventType(EventType.COMMENT_CREATED)
+                .payload(payload)
+                .send();
 
         return CommentResponse.from(saved);
     }
@@ -99,5 +116,14 @@ public class CommentService {
         }
 
         commentRepository.delete(comment);
+
+        CommentDeletedPayload payload = new CommentDeletedPayload(
+                comment.getId(),
+                comment.getTask().getId(),
+                user.getId()
+        );
+        eventSender.eventType(EventType.COMMENT_DELETED)
+                .payload(payload)
+                .send();
     }
 }

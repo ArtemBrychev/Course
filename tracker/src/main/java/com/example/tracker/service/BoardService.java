@@ -2,6 +2,9 @@ package com.example.tracker.service;
 
 import com.example.tracker.dto.BoardResponse;
 import com.example.tracker.dto.CreateBoardRequest;
+import com.example.tracker.eventdriven.EventSender;
+import com.example.tracker.eventdriven.EventType;
+import com.example.tracker.eventdriven.events.BoardCreatedPayload;
 import com.example.tracker.exceptions.AccessDeniedException;
 import com.example.tracker.exceptions.DataAlreadyExistsException;
 import com.example.tracker.exceptions.DataNotFoundException;
@@ -16,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 
 @Slf4j
@@ -27,6 +31,7 @@ public class BoardService {
     private final BoardCacheRepository boardCacheRepository;
     private final UserService userService;
     private final BoardMemberRepository boardMemberRepository;
+    private final EventSender eventSender;
 
     public BoardResponse create(String email, CreateBoardRequest request) {
 
@@ -38,6 +43,15 @@ public class BoardService {
                 .build();
 
         Board saved = boardRepository.save(board);
+
+        BoardCreatedPayload payload = new BoardCreatedPayload(
+                saved.getId(),
+                saved.getTitle(),
+                saved.getOwner().getId()
+        );
+        eventSender.eventType(EventType.BOARD_CREATED)
+                .payload(payload)
+                .send();
 
         return BoardResponse.from(saved);
     }
@@ -117,6 +131,15 @@ public class BoardService {
         boardCacheRepository.delete(id);
 
         boardRepository.delete(board);
+
+        BoardCreatedPayload payload = new BoardCreatedPayload(
+                board.getId(),
+                board.getTitle(),
+                board.getOwner().getId()
+        );
+        eventSender.eventType(EventType.BOARD_CREATED)
+                .payload(payload)
+                .send();
     }
 
     @Transactional
@@ -166,14 +189,12 @@ public class BoardService {
     }
 
     public boolean isOwner(Board board, User user) {
-
         return board.getOwner()
                 .getId()
                 .equals(user.getId());
     }
 
     public boolean isMember(Board board, User user) {
-
         return boardMemberRepository.existsByBoardIdAndUserId(
                 board.getId(),
                 user.getId()
@@ -181,7 +202,6 @@ public class BoardService {
     }
 
     public boolean hasAccess(Board board, User user) {
-
         return isOwner(board, user)
                 || isMember(board, user);
     }
