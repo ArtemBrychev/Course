@@ -11,6 +11,8 @@ public class TaskStatusChangedPayload implements EventPayload{
 
     private Long taskId;
 
+    private Long boardId;
+
     private String oldStatus;
 
     private String newStatus;

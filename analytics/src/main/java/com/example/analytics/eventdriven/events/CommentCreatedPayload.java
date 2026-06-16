@@ -13,6 +13,8 @@ public class CommentCreatedPayload implements EventPayload{
 
     private Long taskId;
 
+    private Long boardId;
+
     private Long authorId;
 
     private String text;

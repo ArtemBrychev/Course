@@ -11,6 +11,8 @@ public class TaskDeletedPayload implements EventPayload{
 
     private Long taskId;
 
+    private Long boardId;
+
     private Long deletedBy;
 
 }
