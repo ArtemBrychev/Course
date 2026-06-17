@@ -15,10 +15,12 @@ import com.example.tracker.exceptions.DataNotFoundException;
 import com.example.tracker.model.Board;
 import com.example.tracker.model.Task;
 import com.example.tracker.model.User;
+import com.example.tracker.observabilty.Metrics;
 import com.example.tracker.repository.BoardRepository;
 import com.example.tracker.repository.TaskRepository;
 import com.example.tracker.repository.UserRepository;
 import com.example.tracker.repository.cache.TaskCacheRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -43,6 +45,8 @@ public class TaskService {
     private final BoardService boardService;
 
     private final EventSender eventSender;
+
+    private final MeterRegistry meterRegistry;
 
     public TaskResponse create(String email, CreateTaskRequest request) {
         User user = userService.getByEmail(email);
@@ -74,10 +78,14 @@ public class TaskService {
                 assigneeId,
                 user.getId()
         );
+
+        log.info("Creating tasks");
+        meterRegistry.counter(Metrics.TASKS_CREATED).increment();
+        log.info("Creating tasks after increment");
+
         eventSender.eventType(EventType.TASK_CREATED)
                 .payload(payload)
                 .send();
-
         return TaskResponse.from(saved);
     }
 
@@ -222,6 +230,11 @@ public class TaskService {
         eventSender.eventType(EventType.TASK_STATUS_CHANGED)
                 .payload(payload)
                 .send();
+        meterRegistry.counter(
+                Metrics.TASK_STATUS_CHANGES,
+                Metrics.STATUS_TAG,
+                request.getStatus().name()
+        ).increment();
 
         return response;
     }

@@ -1,0 +1,56 @@
+groups:
+
+  - name: system-alerts
+
+    rules:
+
+      - alert: HighCPUUsage
+
+        expr: system_cpu_usage > 0.8
+
+        for: 1m
+
+        labels:
+          severity: critical
+
+        annotations:
+          summary: "High CPU usage"
+
+          description: "CPU usage exceeded 80% for one minute."
+
+  - name: task-alerts
+
+    rules:
+
+      - alert: HighTaskCreationRate
+
+        expr: increase(mysuperpupertracker_tasks_total[5m]) > 1
+
+        for: 1m
+
+        labels:
+          severity: warning
+
+        annotations:
+          summary: "Too many tasks created"
+
+          description: "More than one tasks were created during the last five minutes."
+
+  - name: performance-alerts
+
+    rules:
+
+      - alert: SlowBoardRequest
+
+        expr: rate(board_tasks_request_duration_seconds_sum[5m]) /
+          rate(board_tasks_request_duration_seconds_count[5m]) > 1
+
+        for: 1m
+
+        labels:
+          severity: critical
+
+        annotations:
+          summary: "Board requests are slow"
+
+          description: "Average request duration exceeds one second."

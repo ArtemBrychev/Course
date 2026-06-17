@@ -1,6 +1,7 @@
 package com.example.analytics.eventdriven;
 
 import com.example.analytics.eventdriven.events.*;
+import com.example.analytics.exceptions.DataNotFoundException;
 import com.example.analytics.model.*;
 import com.example.analytics.repository.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -246,7 +247,7 @@ public class EventHandler {
         TaskStateEntity task =
                 taskStateRepository.findById(
                         payload.getTaskId()
-                ).orElseThrow();
+                ).orElseThrow(() -> new DataNotFoundException("Задача не найдена"));
 
         task.setStatus(
                 payload.getNewStatus()

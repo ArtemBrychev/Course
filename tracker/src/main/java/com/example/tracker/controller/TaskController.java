@@ -8,6 +8,9 @@ import com.example.tracker.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.example.tracker.observabilty.Metrics;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 
 import java.security.Principal;
 import java.util.List;
@@ -19,6 +22,7 @@ import java.util.Map;
 public class TaskController {
 
     private final TaskService taskService;
+    private final MeterRegistry meterRegistry;
 
     @PostMapping("/create")
     public ResponseEntity<TaskResponse> create(
@@ -53,7 +57,7 @@ public class TaskController {
             @PathVariable Long boardId,
             Principal principal
     ) {
-
+        Timer timer = meterRegistry.timer(Metrics.BOARD_TASKS_REQUEST_DURATION);
         return ResponseEntity.ok(
                 taskService.getAllByBoard(
                         boardId,
