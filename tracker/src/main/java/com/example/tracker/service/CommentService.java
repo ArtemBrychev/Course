@@ -61,6 +61,7 @@ public class CommentService {
         CommentCreatedPayload payload = new CommentCreatedPayload(
                 saved.getId(),
                 saved.getTask().getId(),
+                saved.getTask().getBoard().getId(),
                 saved.getAuthor().getId(),
                 saved.getText()
         );
@@ -120,6 +121,7 @@ public class CommentService {
         CommentDeletedPayload payload = new CommentDeletedPayload(
                 comment.getId(),
                 comment.getTask().getId(),
+                comment.getTask().getBoard().getId(),
                 user.getId()
         );
         eventSender.eventType(EventType.COMMENT_DELETED)

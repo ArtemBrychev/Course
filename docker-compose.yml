@@ -12,6 +12,18 @@ services:
     env_file:
       - .env
 
+  analytics:
+    build: analytics/.
+    container_name: analytics
+    ports:
+      - "9090:9090"
+    env_file:
+      - .env
+    depends_on:
+      postgresanalytics:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
   postgres:
     image: postgres:15
@@ -29,6 +41,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
   redis:
     image: redis:7.2-alpine
     container_name: ttredis
@@ -39,43 +52,38 @@ services:
     image: rabbitmq:3-management
     container_name: ttrabbitmq
     ports:
-      - "15671:15672"
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     volumes:
       - ./rabbitmq-main-data:/var/lib/rabbitmq
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "check_port_connectivity" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-
-
-
-
-
-
-#  urlshortenerstat:
-#    build: UrlShortenerStatistics/.
-#    container_name: urlshortenerstat
-#    ports:
-#      - "9090:9090"
-#    env_file:
-#      - ./UrlShortenerStatistics/.env
-#    depends_on:
-#      - postgresstat
-#
-#  postgresstat:
-#    image: postgres:15
-#    container_name: statisticPostgres
-#    ports:
-#      - "5433:5432"
-#    environment:
-#      POSTGRES_DB: ${DB_NAME_STAT}
-#      POSTGRES_USER: ${DB_USER_STAT}
-#      POSTGRES_PASSWORD: ${DB_PASSWORD_STAT}
-#    volumes:
-#      - postgres_stat_data:/var/lib/postgresql/data
+  postgresanalytics:
+    image: postgres:15
+    container_name: analyticsDb
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: ${ANALYTICS_DB_NAME}
+      POSTGRES_USER: ${ANALYTICS_DB_USER}
+      POSTGRES_PASSWORD: ${ANALYTICS_DB_PASSWORD}
+    volumes:
+      - postgres_analytics_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${ANALYTICS_DB_USER} -d ${ANALYTICS_DB_NAME}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   postgres_data:
-  #postgres_stat_data:
+  postgres_analytics_data:
   rabbitmq-data:
-  #rabbitmq-stat-data:

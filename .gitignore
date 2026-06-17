@@ -34,3 +34,41 @@ tracker/build/
 
 ### VS Code ###
 tracker/.vscode/
+
+
+analytics/.env
+.env
+
+analytics/HELP.md
+analytics/target/
+analytics/.mvn/wrapper/maven-wrapper.jar
+!analytics/**/src/main/**/target/
+!analytics/**/src/test/**/target/
+
+### STS ###
+analytics/.apt_generated
+analytics/.classpath
+analytics/.factorypath
+analytics/.project
+analytics/.settings
+analytics/.springBeans
+analytics/.sts4-cache
+
+### IntelliJ IDEA ###
+analytics/.idea
+analytics/*.iws
+analytics/*.iml
+analytics/*.ipr
+
+### NetBeans ###
+analytics/nbproject/private/
+analytics/nbbuild/
+analytics/dist/
+analytics/nbdist/
+analytics/.nb-gradle/
+analytics/build/
+!analytics/**/src/main/**/build/
+!analytics/**/src/test/**/build/
+
+### VS Code ###
+analytics/.vscode/

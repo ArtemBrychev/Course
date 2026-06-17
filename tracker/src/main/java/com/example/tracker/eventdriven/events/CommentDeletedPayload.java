@@ -13,6 +13,8 @@ public class CommentDeletedPayload implements EventPayload{
 
     private Long taskId;
 
+    private Long boardId;
+
     private Long deletedBy;
 
 }

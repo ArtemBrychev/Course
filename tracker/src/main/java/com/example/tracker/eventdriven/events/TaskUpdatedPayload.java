@@ -11,6 +11,8 @@ public class TaskUpdatedPayload implements EventPayload {
 
     private Long taskId;
 
+    private Long boardId;
+
     private String title;
 
     private String description;

@@ -5,6 +5,7 @@ import com.example.tracker.dto.CreateBoardRequest;
 import com.example.tracker.eventdriven.EventSender;
 import com.example.tracker.eventdriven.EventType;
 import com.example.tracker.eventdriven.events.BoardCreatedPayload;
+import com.example.tracker.eventdriven.events.BoardDeletedPayload;
 import com.example.tracker.exceptions.AccessDeniedException;
 import com.example.tracker.exceptions.DataAlreadyExistsException;
 import com.example.tracker.exceptions.DataNotFoundException;
@@ -132,12 +133,11 @@ public class BoardService {
 
         boardRepository.delete(board);
 
-        BoardCreatedPayload payload = new BoardCreatedPayload(
+        BoardDeletedPayload payload = new BoardDeletedPayload(
                 board.getId(),
-                board.getTitle(),
-                board.getOwner().getId()
+                user.getId()
         );
-        eventSender.eventType(EventType.BOARD_CREATED)
+        eventSender.eventType(EventType.BOARD_DELETED)
                 .payload(payload)
                 .send();
     }

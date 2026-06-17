@@ -174,6 +174,7 @@ public class TaskService {
 
         TaskUpdatedPayload payload = new TaskUpdatedPayload(
                 updated.getId(),
+                updated.getBoard().getId(),
                 updated.getTitle(),
                 updated.getDescription(),
                 user.getId()
@@ -213,6 +214,7 @@ public class TaskService {
 
         TaskStatusChangedPayload payload = new TaskStatusChangedPayload(
                 updated.getId(),
+                updated.getBoard().getId(),
                 oldStatus,
                 updated.getStatus().toString(),
                 user.getId()
@@ -241,6 +243,7 @@ public class TaskService {
 
         TaskDeletedPayload payload = new TaskDeletedPayload(
                 task.getId(),
+                task.getBoard().getId(),
                 user.getId()
         );
 

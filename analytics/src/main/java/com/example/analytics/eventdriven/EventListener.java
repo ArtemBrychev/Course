@@ -9,15 +9,10 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class EventListener {
 
-    private final EventDispatcher dispatcher;
+    private final EventHandler handler;
 
-    @RabbitListener(
-            queues = RabbitConfig.ANALYTICS_QUEUE
-    )
+    @RabbitListener(queues = RabbitConfig.ANALYTICS_QUEUE)
     public void receive(EventMessage event) throws JsonProcessingException {
-
-        dispatcher.dispatch(event);
-
+        handler.handle(event);
     }
-
 }
