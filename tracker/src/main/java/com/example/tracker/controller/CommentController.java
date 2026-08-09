@@ -34,6 +34,22 @@ public class CommentController {
         );
     }
 
+    @PostMapping("/change/{commentId}")
+    public ResponseEntity<CommentResponse> changeComment(
+            @PathVariable Long commentId,
+            @RequestBody CreateCommentRequest request,
+            Principal principal
+    ) {
+
+        return ResponseEntity.ok(
+                commentService.changeComment(
+                        commentId,
+                        principal.getName(),
+                        request
+                )
+        );
+    }
+
     @GetMapping("/task/{taskId}")
     public ResponseEntity<List<CommentResponse>> getAllByTask(
             @PathVariable Long taskId,

@@ -128,4 +128,26 @@ public class CommentService {
                 .payload(payload)
                 .send();
     }
+
+    public CommentResponse changeComment(Long id, String email, CreateCommentRequest request) {
+        User user = userService.getByEmail(email);
+
+        Comment comment = commentRepository.findById(id)
+                .orElseThrow(() ->
+                        new DataNotFoundException("Comment not found")
+                );
+
+        boolean isAuthor = comment.getAuthor()
+                .getId()
+                .equals(user.getId());
+
+        if (!isAuthor){
+            throw new AccessDeniedException("Access denied");
+        }
+
+        comment.setText(request.getText());
+        Comment saved = commentRepository.save(comment);
+
+        return CommentResponse.from(saved);
+    }
 }

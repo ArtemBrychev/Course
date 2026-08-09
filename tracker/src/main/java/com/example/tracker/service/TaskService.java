@@ -166,6 +166,7 @@ public class TaskService {
             task.setStatus(request.getStatus());
         }
 
+        //Назначение другого пользователя
         if (request.getAssigneeId() != null) {
 
             User assignee = userRepository.findById(
@@ -174,6 +175,9 @@ public class TaskService {
                     new DataNotFoundException("User not found")
             );
 
+            if(task.getAssignee()==null || assignee.getId() != task.getAssignee().getId()){
+                //Добавить просто отправку событий и все. Ага
+            }
             task.setAssignee(assignee);
         }
 
