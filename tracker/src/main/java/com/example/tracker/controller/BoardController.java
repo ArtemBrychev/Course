@@ -29,6 +29,17 @@ public class BoardController {
         );
     }
 
+    @PostMapping("/{id}/changeName")
+    public ResponseEntity<BoardResponse> rename(
+            @PathVariable Long id,
+            @RequestBody CreateBoardRequest request,
+            Principal principal
+    ) {
+        return ResponseEntity.ok(
+                boardService.rename(principal.getName(), request, id)
+        );
+    }
+
     @GetMapping("allOwner")
     public ResponseEntity<List<BoardResponse>> getAllOwner(
             Principal principal

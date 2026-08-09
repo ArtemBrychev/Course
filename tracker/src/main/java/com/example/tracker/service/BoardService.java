@@ -10,6 +10,7 @@ import com.example.tracker.eventdriven.events.BoardDeletedPayload;
 import com.example.tracker.exceptions.AccessDeniedException;
 import com.example.tracker.exceptions.DataAlreadyExistsException;
 import com.example.tracker.exceptions.DataNotFoundException;
+import com.example.tracker.exceptions.InvalidDataException;
 import com.example.tracker.model.Board;
 import com.example.tracker.model.BoardMember;
 import com.example.tracker.model.User;
@@ -229,4 +230,24 @@ public class BoardService {
                 || isMember(board, user);
     }
 
+    public BoardResponse rename(String ownerEmail, CreateBoardRequest request, Long boardId) {
+        User owner = userService.getByEmail(ownerEmail);
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(
+                        () -> new DataNotFoundException("Board not found")
+                );
+
+        if (!board.getOwner().getId().equals(owner.getId())) {
+            throw new AccessDeniedException("Only board owner can rename the board");
+        }
+
+        if(request.getTitle()==null || request.getTitle().isEmpty()){
+            throw new InvalidDataException("Board Title should not be empty");
+        }
+
+        board.setTitle(request.getTitle());
+        Board saved = boardRepository.save(board);
+
+        return BoardResponse.from(saved);
+    }
 }
