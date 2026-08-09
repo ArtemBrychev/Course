@@ -2,6 +2,7 @@ package com.example.tracker.service;
 
 import com.example.tracker.dto.BoardResponse;
 import com.example.tracker.dto.CreateBoardRequest;
+import com.example.tracker.dto.UserResponse;
 import com.example.tracker.eventdriven.EventSender;
 import com.example.tracker.eventdriven.EventType;
 import com.example.tracker.eventdriven.events.BoardCreatedPayload;
@@ -21,7 +22,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -118,6 +121,26 @@ public class BoardService {
         return response;
     }
 
+    public List<UserResponse> findBoardMembers(Long id, String email) {
+        User user = userService.getByEmail(email);
+
+        Board board = boardRepository.findById(id)
+                .orElseThrow(() ->
+                        new DataNotFoundException("Board not found")
+                );
+
+        if (!hasAccess(board, user)) {
+            throw new AccessDeniedException("Access denied");
+        }
+
+        return boardMemberRepository.findAllByBoardId(id)
+                .stream()
+                .map(BoardMember::getUser)
+                .filter(Objects::nonNull)
+                .map(UserResponse::from)
+                .toList();
+    }
+
     public void delete(Long id, String email) {
 
         User user = userService.getByEmail(email);
@@ -205,4 +228,5 @@ public class BoardService {
         return isOwner(board, user)
                 || isMember(board, user);
     }
+
 }

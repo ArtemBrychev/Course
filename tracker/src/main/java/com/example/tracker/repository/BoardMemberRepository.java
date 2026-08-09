@@ -1,5 +1,6 @@
 package com.example.tracker.repository;
 
+import com.example.tracker.model.Board;
 import com.example.tracker.model.BoardMember;
 import com.example.tracker.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,4 +14,6 @@ public interface BoardMemberRepository
 
     void deleteByBoardIdAndUserId(Long boardId, Long userId);
     List<BoardMember> findAllByUser(User user);
+    List<BoardMember> findAllByBoard(Board board);
+    List<BoardMember> findAllByBoardId(Long boardId);
 }

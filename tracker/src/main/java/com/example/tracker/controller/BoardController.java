@@ -57,6 +57,14 @@ public class BoardController {
         );
     }
 
+    @GetMapping("/{id}/members")
+    public ResponseEntity<?> getAllBoardMembers(
+            @PathVariable Long id,
+            Principal principal
+    ){
+        return ResponseEntity.ok(boardService.findBoardMembers(id, principal.getName()));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(
             @PathVariable Long id,

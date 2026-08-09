@@ -29,13 +29,7 @@ public class TaskController {
             @RequestBody CreateTaskRequest request,
             Principal principal
     ) {
-
-        return ResponseEntity.ok(
-                taskService.create(
-                        principal.getName(),
-                        request
-                )
-        );
+        return ResponseEntity.ok(taskService.create(principal.getName(), request));
     }
 
     @GetMapping("/get/{id}")
@@ -44,12 +38,7 @@ public class TaskController {
             Principal principal
     ) {
 
-        return ResponseEntity.ok(
-                taskService.getById(
-                        id,
-                        principal.getName()
-                )
-        );
+        return ResponseEntity.ok(taskService.getById(id, principal.getName()));
     }
 
     @GetMapping("/board/{boardId}")
