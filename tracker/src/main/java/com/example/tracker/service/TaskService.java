@@ -6,10 +6,7 @@ import com.example.tracker.dto.TaskResponse;
 import com.example.tracker.dto.UpdateTaskRequest;
 import com.example.tracker.eventdriven.EventSender;
 import com.example.tracker.eventdriven.EventType;
-import com.example.tracker.eventdriven.events.TaskCreatedPayload;
-import com.example.tracker.eventdriven.events.TaskDeletedPayload;
-import com.example.tracker.eventdriven.events.TaskStatusChangedPayload;
-import com.example.tracker.eventdriven.events.TaskUpdatedPayload;
+import com.example.tracker.eventdriven.events.*;
 import com.example.tracker.exceptions.AccessDeniedException;
 import com.example.tracker.exceptions.DataNotFoundException;
 import com.example.tracker.model.Board;
@@ -26,6 +23,31 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+
+/*
+* Add sending to:
+* Assigning/Unassigning user
+* That;s all I guess
+*
+* Example
+* TaskCreatedPayload payload = new TaskCreatedPayload(
+                saved.getId(),
+                saved.getBoard().getId(),
+                saved.getTitle(),
+                saved.getDescription(),
+                saved.getStatus().toString(),
+                assigneeId,
+                user.getId()
+        );
+
+        log.info("Creating tasks");
+        meterRegistry.counter(Metrics.TASKS_CREATED).increment();
+        log.info("Creating tasks after increment");
+
+        eventSender.eventType(EventType.TASK_CREATED)
+                .payload(payload)
+                .send();
+* */
 
 @Slf4j
 @Service
@@ -166,21 +188,46 @@ public class TaskService {
             task.setStatus(request.getStatus());
         }
 
+        User assignee = null;
         //Назначение другого пользователя
-        if (request.getAssigneeId() != null) {
-
-            User assignee = userRepository.findById(
+        if (request.getAssigneeId() != null && request.getAssigneeId()!=0) {
+            assignee = userRepository.findById(
                     request.getAssigneeId()
             ).orElseThrow(() ->
                     new DataNotFoundException("User not found")
             );
-
-            if(task.getAssignee()==null || assignee.getId() != task.getAssignee().getId()){
-                //Добавить просто отправку событий и все. Ага
-            }
-            task.setAssignee(assignee);
         }
 
+        //Снятие с задачи
+        if(task.getAssignee()!=null
+                && (assignee==null
+                || !assignee.getId().equals(task.getAssignee().getId()))){
+            var payload = new TaskUnassignedPayload(
+                    task.getId(),
+                    task.getBoard().getId(),
+                    task.getAssignee().getId(),
+                    task.getBoard().getOwner().getId()
+            );
+
+            eventSender.eventType(EventType.TASK_UNASSIGNED).payload(payload).send();
+        }
+
+        //Назначение на задачу
+        if(assignee!=null
+                && (task.getAssignee()==null
+                || !assignee.getId().equals(task.getAssignee().getId()))){
+
+            var payload = new TaskAssignedPayload(
+                    task.getId(),
+                    task.getBoard().getId(),
+                    assignee.getId(),
+                    task.getBoard().getOwner().getId()
+            );
+
+            eventSender.eventType(EventType.TASK_ASSIGNED).payload(payload).send();
+        }
+
+        task.setAssignee(assignee);
         Task updated = taskRepository.save(task);
         taskCacheRepository.delete(id);
 

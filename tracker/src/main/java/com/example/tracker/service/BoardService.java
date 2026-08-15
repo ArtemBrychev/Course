@@ -5,8 +5,7 @@ import com.example.tracker.dto.CreateBoardRequest;
 import com.example.tracker.dto.UserResponse;
 import com.example.tracker.eventdriven.EventSender;
 import com.example.tracker.eventdriven.EventType;
-import com.example.tracker.eventdriven.events.BoardCreatedPayload;
-import com.example.tracker.eventdriven.events.BoardDeletedPayload;
+import com.example.tracker.eventdriven.events.*;
 import com.example.tracker.exceptions.AccessDeniedException;
 import com.example.tracker.exceptions.DataAlreadyExistsException;
 import com.example.tracker.exceptions.DataNotFoundException;
@@ -26,6 +25,17 @@ import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+
+/*Пример
+
+        BoardDeletedPayload payload = new BoardDeletedPayload(
+                board.getId(),
+                user.getId()
+        );
+        eventSender.eventType(EventType.BOARD_DELETED)
+                .payload(payload)
+                .send();
+* */
 
 @Slf4j
 @Service
@@ -189,6 +199,16 @@ public class BoardService {
         boardMember.setBoard(board);
         boardMember.setUser(member);
 
+        BoardMemberAddedPayload payload = new BoardMemberAddedPayload(
+                board.getId(),
+                board.getOwner().getId(),
+                member.getId()
+        );
+
+        eventSender.eventType(EventType.BOARD_MEMBER_ADDED)
+                        .payload(payload)
+                                .send();
+
         boardMemberRepository.save(boardMember);
     }
 
@@ -208,6 +228,16 @@ public class BoardService {
         if (!boardMemberRepository.existsByBoardIdAndUserId(boardId, member.getId())) {
             throw new DataNotFoundException("User is not a board member");
         }
+
+        BoardMemberRemovedPayload payload = new BoardMemberRemovedPayload(
+                board.getId(),
+                board.getOwner().getId(),
+                member.getId()
+        );
+
+        eventSender.eventType(EventType.BOARD_MEMBER_REMOVED)
+                .payload(payload)
+                .send();
 
         boardMemberRepository.deleteByBoardIdAndUserId(boardId, member.getId());
     }
@@ -245,8 +275,20 @@ public class BoardService {
             throw new InvalidDataException("Board Title should not be empty");
         }
 
+        String oldTitle = board.getTitle();
         board.setTitle(request.getTitle());
         Board saved = boardRepository.save(board);
+
+        BoardRenamedPayload payload = new BoardRenamedPayload(
+                board.getId(),
+                board.getOwner().getId(),
+                request.getTitle(),
+                oldTitle
+        );
+
+        eventSender.eventType(EventType.BOARD_RENAMED)
+                .payload(payload)
+                .send();
 
         return BoardResponse.from(saved);
     }

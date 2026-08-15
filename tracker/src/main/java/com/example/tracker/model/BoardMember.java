@@ -1,11 +1,14 @@
 package com.example.tracker.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 @Data
 @Entity
 @Table(name = "board_members")
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class BoardMember {
 
     @Id
