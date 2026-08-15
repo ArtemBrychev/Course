@@ -227,6 +227,9 @@ public class TaskService {
             eventSender.eventType(EventType.TASK_ASSIGNED).payload(payload).send();
         }
 
+        if(assignee!=null && !boardService.hasAccess(task.getBoard(), assignee)){
+            throw new AccessDeniedException("User have no access to the board");
+        }
         task.setAssignee(assignee);
         Task updated = taskRepository.save(task);
         taskCacheRepository.delete(id);

@@ -4,6 +4,7 @@ import com.example.tracker.dto.CommentResponse;
 import com.example.tracker.dto.CreateCommentRequest;
 import com.example.tracker.eventdriven.EventSender;
 import com.example.tracker.eventdriven.EventType;
+import com.example.tracker.eventdriven.events.CommentChangedPayload;
 import com.example.tracker.eventdriven.events.CommentCreatedPayload;
 import com.example.tracker.eventdriven.events.CommentDeletedPayload;
 import com.example.tracker.exceptions.AccessDeniedException;
@@ -141,12 +142,27 @@ public class CommentService {
                 .getId()
                 .equals(user.getId());
 
-        if (!isAuthor){
+        if (!isAuthor) {
             throw new AccessDeniedException("Access denied");
         }
 
+        String oldText = comment.getText();
+
         comment.setText(request.getText());
         Comment saved = commentRepository.save(comment);
+
+        CommentChangedPayload payload = new CommentChangedPayload(
+                saved.getId(),
+                saved.getTask().getId(),
+                saved.getTask().getBoard().getId(),
+                saved.getAuthor().getId(),
+                oldText,
+                saved.getText()
+        );
+
+        eventSender.eventType(EventType.COMMENT_CHANGED)
+                .payload(payload)
+                .send();
 
         return CommentResponse.from(saved);
     }

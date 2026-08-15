@@ -271,18 +271,21 @@ public class BoardService {
             throw new AccessDeniedException("Only board owner can rename the board");
         }
 
-        if(request.getTitle()==null || request.getTitle().isEmpty()){
+        if(request.getTitle()==null || request.getTitle().isBlank()){
             throw new InvalidDataException("Board Title should not be empty");
         }
 
         String oldTitle = board.getTitle();
+
         board.setTitle(request.getTitle());
         Board saved = boardRepository.save(board);
 
+        boardCacheRepository.delete(boardId);
+
         BoardRenamedPayload payload = new BoardRenamedPayload(
-                board.getId(),
-                board.getOwner().getId(),
-                request.getTitle(),
+                saved.getId(),
+                saved.getOwner().getId(),
+                saved.getTitle(),
                 oldTitle
         );
 

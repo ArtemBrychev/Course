@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CommentChangedPayload {
+public class CommentChangedPayload implements EventPayload{
 
     private Long commentId;
 
