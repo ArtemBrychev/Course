@@ -5,14 +5,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
-public class TaskAssignedPayload implements EventPayload {
-    private Long taskId;
+@AllArgsConstructor
+public class BoardRenamedPayload  implements EventPayload{
 
     private Long boardId;
 
-    private Long assigneeId;
+    private Long ownerId;
 
-    private Long createdBy;
+    private String newTitle;
+
+    private String oldTitle;
 }

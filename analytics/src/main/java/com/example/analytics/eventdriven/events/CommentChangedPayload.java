@@ -7,12 +7,17 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class TaskAssignedPayload implements EventPayload {
+public class CommentChangedPayload implements EventPayload{
+
+    private Long commentId;
+
     private Long taskId;
 
     private Long boardId;
 
-    private Long assigneeId;
+    private Long authorId;
 
-    private Long createdBy;
+    private String oldText;
+
+    private String newText;
 }

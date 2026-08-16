@@ -7,12 +7,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class TaskAssignedPayload implements EventPayload {
-    private Long taskId;
+public class BoardMemberRemovedPayload implements EventPayload {
 
-    private Long boardId;
-
-    private Long assigneeId;
-
-    private Long createdBy;
+    private long boardId;
+    private long ownerId;
+    private long memberId;
 }

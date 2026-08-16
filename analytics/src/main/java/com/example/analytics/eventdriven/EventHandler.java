@@ -106,7 +106,199 @@ public class EventHandler {
 
                 handleCommentDeleted(payload, event);
             }
+
+            case BOARD_RENAMED -> {
+                BoardRenamedPayload payload =
+                        objectMapper.treeToValue(
+                                event.getPayload(),
+                                BoardRenamedPayload.class
+                        );
+
+                handleBoardRenamed(payload, event);
+            }
+
+            case BOARD_MEMBER_ADDED -> {
+                BoardMemberAddedPayload payload =
+                        objectMapper.treeToValue(
+                                event.getPayload(),
+                                BoardMemberAddedPayload.class
+                        );
+
+                handleBoardMemberAdded(payload, event);
+            }
+
+            case BOARD_MEMBER_REMOVED -> {
+                BoardMemberRemovedPayload payload =
+                        objectMapper.treeToValue(
+                                event.getPayload(),
+                                BoardMemberRemovedPayload.class
+                        );
+
+                handleBoardMemberRemoved(payload, event);
+            }
+
+            case COMMENT_CHANGED -> {
+                CommentChangedPayload payload =
+                        objectMapper.treeToValue(
+                                event.getPayload(),
+                                CommentChangedPayload.class
+                        );
+
+                handleCommentChanged(payload, event);
+            }
+
+            case TASK_ASSIGNED -> {
+                TaskAssignedPayload payload =
+                        objectMapper.treeToValue(
+                                event.getPayload(),
+                                TaskAssignedPayload.class
+                        );
+
+                handleTaskAssigned(payload, event);
+            }
+
+            case TASK_UNASSIGNED -> {
+                TaskUnassignedPayload payload =
+                        objectMapper.treeToValue(
+                                event.getPayload(),
+                                TaskUnassignedPayload.class
+                        );
+
+                handleTaskUnassigned(payload, event);
+            }
+
         }
+    }
+
+    private void handleTaskUnassigned(
+            TaskUnassignedPayload payload,
+            EventMessage event
+    ) {
+        eventRepository.save(
+                new EventEntity(
+                        null,
+                        EventType.TASK_UNASSIGNED,
+                        payload.getCreatedBy(),
+                        payload.getBoardId(),
+                        payload.getTaskId(),
+                        event.getPayload().toString(),
+                        event.getOccurredAt()
+                )
+        );
+
+        TaskStateEntity task =
+                taskStateRepository.findById(
+                        payload.getTaskId()
+                ).orElseThrow(() ->
+                        new DataNotFoundException("Задача не найдена")
+                );
+
+        task.setAssigneeId(null);
+        task.setUpdatedAt(event.getOccurredAt());
+
+        taskStateRepository.save(task);
+    }
+
+    private void handleTaskAssigned(
+            TaskAssignedPayload payload,
+            EventMessage event
+    ) {
+        eventRepository.save(
+                new EventEntity(
+                        null,
+                        EventType.TASK_ASSIGNED,
+                        payload.getCreatedBy(),
+                        payload.getBoardId(),
+                        payload.getTaskId(),
+                        event.getPayload().toString(),
+                        event.getOccurredAt()
+                )
+        );
+
+        TaskStateEntity task =
+                taskStateRepository.findById(
+                        payload.getTaskId()
+                ).orElseThrow(() ->
+                        new DataNotFoundException("Задача не найдена")
+                );
+
+        task.setAssigneeId(
+                payload.getAssigneeId()
+        );
+
+        task.setUpdatedAt(
+                event.getOccurredAt()
+        );
+
+        taskStateRepository.save(task);
+    }
+
+    private void handleCommentChanged(
+            CommentChangedPayload payload,
+            EventMessage event
+    ) {
+        eventRepository.save(
+                new EventEntity(
+                        null,
+                        EventType.COMMENT_CHANGED,
+                        payload.getAuthorId(),
+                        payload.getBoardId(),
+                        payload.getTaskId(),
+                        event.getPayload().toString(),
+                        event.getOccurredAt()
+                )
+        );
+    }
+
+    private void handleBoardMemberRemoved(
+            BoardMemberRemovedPayload payload,
+            EventMessage event
+    ) {
+        eventRepository.save(
+                new EventEntity(
+                        null,
+                        EventType.BOARD_MEMBER_REMOVED,
+                        payload.getOwnerId(),
+                        payload.getBoardId(),
+                        null,
+                        event.getPayload().toString(),
+                        event.getOccurredAt()
+                )
+        );
+    }
+
+    private void handleBoardMemberAdded(
+            BoardMemberAddedPayload payload,
+            EventMessage event
+    ) {
+        eventRepository.save(
+                new EventEntity(
+                        null,
+                        EventType.BOARD_MEMBER_ADDED,
+                        payload.getOwnerId(),
+                        payload.getBoardId(),
+                        null,
+                        event.getPayload().toString(),
+                        event.getOccurredAt()
+                )
+        );
+    }
+
+    private void handleBoardRenamed(
+            BoardRenamedPayload payload,
+            EventMessage event
+    ) {
+        eventRepository.save(
+                new EventEntity(
+                        null,
+                        EventType.BOARD_RENAMED,
+                        payload.getOwnerId(),
+                        payload.getBoardId(),
+                        null,
+                        event.getPayload().toString(),
+                        event.getOccurredAt()
+                )
+        );
     }
 
     private void handleBoardCreated(

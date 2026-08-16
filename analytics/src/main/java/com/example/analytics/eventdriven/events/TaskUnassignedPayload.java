@@ -5,14 +5,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 public class TaskUnassignedPayload implements EventPayload{
-
     private Long taskId;
 
-    private Long userId;
+    private Long boardId;
 
-    private Long unassignedBy;
+    private Long assigneeId;
 
+    private Long createdBy;
 }
