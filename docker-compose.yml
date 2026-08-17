@@ -126,8 +126,38 @@ services:
       - "1025:1025"
       - "8025:8025"
 
+
+  notification:
+    build: notification/.
+    container_name: notification
+    ports:
+      - "8081:8081"
+    env_file:
+      - .env
+    depends_on:
+      postgresnotification:
+        condition: service_healthy
+
+  postgresnotification:
+    image: postgres:15
+    container_name: notificationDb
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: ${NOTIFICATION_DB_NAME}
+      POSTGRES_USER: ${NOTIFICATION_DB_USER}
+      POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+    volumes:
+      - postgres_notification_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${NOTIFICATION_DB_USER} -d ${NOTIFICATION_DB_NAME}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
 volumes:
   postgres_data:
   postgres_analytics_data:
+  postgres_notification_data:
   rabbitmq-data:
   grafana-data:

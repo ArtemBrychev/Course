@@ -72,3 +72,37 @@ analytics/build/
 
 ### VS Code ###
 analytics/.vscode/
+
+notification/HELP.md
+notification/target/
+notification/.mvn/wrapper/maven-wrapper.jar
+!notification/**/src/main/**/target/
+!notification/**/src/test/**/target/
+
+### STS ###
+notification/.apt_generated
+notification/.classpath
+notification/.factorypath
+notification/.project
+notification/.settings
+notification/.springBeans
+notification/.sts4-cache
+
+### IntelliJ IDEA ###
+notification/.idea
+notification/*.iws
+notification/*.iml
+notification/*.ipr
+
+### NetBeans ###
+notification/nbproject/private/
+notification/nbbuild/
+notification/dist/
+notification/nbdist/
+notification/.nb-gradle/
+notification/build/
+!notification/**/src/main/**/build/
+!notification/**/src/test/**/build/
+
+### VS Code ###
+notification/.vscode/
