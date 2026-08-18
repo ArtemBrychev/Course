@@ -1,0 +1,18 @@
+package notification.eventdriven;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.stereotype.Component;
+
+@Component
+@RequiredArgsConstructor
+public class EventListener {
+
+    private final EventHandler handler;
+
+    @RabbitListener(queues = RabbitConfig.NOTIFICATION_QUEUE)
+    public void receive(EventMessage event) throws JsonProcessingException {
+        handler.handle(event);
+    }
+}

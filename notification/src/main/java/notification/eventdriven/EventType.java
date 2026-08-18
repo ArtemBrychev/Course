@@ -1,0 +1,21 @@
+package notification.eventdriven;
+
+public enum EventType {
+
+    BOARD_CREATED,
+    BOARD_DELETED,
+    BOARD_RENAMED,
+    BOARD_MEMBER_ADDED,
+    BOARD_MEMBER_REMOVED,
+
+    TASK_CREATED,
+    TASK_UPDATED,
+    TASK_DELETED,
+    TASK_STATUS_CHANGED,
+    TASK_ASSIGNED,
+    TASK_UNASSIGNED,
+
+    COMMENT_CREATED,
+    COMMENT_CHANGED,
+    COMMENT_DELETED
+}
